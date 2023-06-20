@@ -1,0 +1,191 @@
+import heapq
+
+
+class Graph:
+    def _init_(self):
+        self.nodes = []
+        self.heap = []
+
+    def add_node(self, node, num_patients=0):
+        self.nodes.append({"node": node, "patients": num_patients, "edges": []})
+
+    def add_edge(self, node1, node2, distance):
+        for node in self.nodes:
+            if node["node"] == node1:
+                node["edges"].append((node2, distance))
+            elif node["node"] == node2:
+                node["edges"].append((node1, distance))
+
+    def push_to_heap(self, distance, node):
+        heapq.heappush(self.heap, (distance, node))
+
+    def pop_from_heap(self):
+        return heapq.heappop(self.heap)
+
+    def is_heap_empty(self):
+        return len(self.heap) == 0
+
+    def update_distance(self, node, distance):
+        for i, (d, n) in enumerate(self.heap):
+            if n == node:
+                self.heap[i] = (distance, n)
+                heapq.heapify(self.heap)
+                break
+
+    def get_distance(self, node):
+        for d, n in self.heap:
+            if n == node:
+                return d
+        return float('inf')
+
+
+def dijkstra(graph, start, destination):
+    distances = {node["node"]: float('inf') for node in graph.nodes}
+    distances[start] = 0
+    previous = {}
+
+    pq = [(0, start)]
+    while pq:
+        curr_distance, curr_node = heapq.heappop(pq)
+
+        if curr_distance > distances[curr_node]:
+            continue
+
+        if curr_node == destination:
+            break
+
+        for neighbor, edge_distance in find_edges(graph, curr_node):
+            distance = curr_distance + edge_distance
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                previous[neighbor] = curr_node
+                heapq.heappush(pq, (distance, neighbor))
+
+    if destination not in previous:
+        return None
+
+    path = []
+    node = destination
+    while node != start:
+        path.append(node)
+        node = previous[node]
+    path.append(start)
+    path.reverse()
+
+    return path, distances[destination]
+
+
+def find_edges(graph, node):
+    for n in graph.nodes:
+        if n["node"] == node:
+            return n["edges"]
+    return []
+
+
+
+
+
+
+# Function to display the graph
+# Function to display the graph
+def display_graph(graph):
+    print("Locations:")
+    for node_data in graph.nodes:
+        print(f"- {node_data['node']} (Patients: {node_data['patients']})")
+    print()
+
+    print("Connections:")
+    for node_data in graph.nodes:
+        for neighbor, distance in node_data['edges']:
+            print(f"{node_data['node']} -> {neighbor}: Distance = {distance}")
+    print()
+
+
+# Function to input the graph information
+def input_graph():
+    graph = Graph()
+
+    num_nodes = int(input("Enter the number of locations: "))
+    print()
+
+    for i in range(num_nodes):
+        node = input(f"Enter the name of location {i + 1}: ")
+        num_patients = int(input(f"Enter the number of patients in {node}: "))
+        graph.add_node(node, num_patients)
+    print()
+
+    num_edges = int(input("Enter the number of connections between locations: "))
+    print()
+
+    for i in range(num_edges):
+        print(f"Enter the details for connection {i + 1}:")
+        node1 = input("Node 1: ")
+        node2 = input("Node 2: ")
+        distance = float(input("Distance: "))
+        graph.add_edge(node1, node2, distance)
+        print()
+
+    return graph
+
+
+# Function to display the optimized route
+def display_route(path, distance):
+    print()
+    print("Optimized Route:")
+    for i in range(len(path) - 1):
+        print(f"{path[i]} -> ", end="")
+    print(path[-1])
+    print(f"Total Distance: {distance} units.")
+    print()
+
+
+# Function to calculate the number of ambulances required based on patients
+# Function to calculate the number of ambulances required based on patients
+def calculate_ambulances(graph, path):
+    ambulances = {}
+    for node in path:
+        for node_data in graph.nodes:
+            if node_data['node'] == node and node_data['node'] != "patients":
+                num_patients = node_data['patients']
+                if num_patients > 0:
+                    ambulances[node] = num_patients
+    return ambulances
+
+
+
+# User interaction
+print("Welcome to the Ambulance Route Optimization System!")
+print()
+
+# Input the graph information
+print("Please provide the following information:")
+graph = input_graph()
+
+# Display the graph
+print("Graph Information:")
+display_graph(graph)
+
+# Input the starting and destination locations
+start_location = input("Enter the starting location: ")
+destination_location = input("Enter the destination location: ")
+print()
+
+# Calculate and display the optimized route
+result = dijkstra(graph, start_location, destination_location)
+
+if result is None:
+    print("No path found.")
+else:
+    path, distance = result
+    display_route(path, distance)
+
+    # Calculate the number of ambulances required
+    ambulances = calculate_ambulances(graph, path)
+
+    # Display the number of ambulances required
+    if ambulances:
+        print("Number of Ambulances Required:")
+        for location, num_ambulances in ambulances.items():
+            print(f"- {location}: {num_ambulances}")
+    else:
+        print("No ambulances required.")
